@@ -17,16 +17,8 @@ public class ExpenseItemTriggerHandlerTest {
      */
     @IsTest
     static void testInsertApprovedItemUpdatesParentTotalAndFlag() {
-        Expense__c parent = new Expense__c(Name = 'Test');
-        insert parent;
-
-        Expense_Item__c item1 = new Expense_Item__c(
-                Name = 'Item 1',
-                Expense__c = parent.Id,
-                Amount__c = 100,
-                Approved__c = true
-        );
-        insert item1;
+        Expense__c parent = ExpenseTestDataUtils.createExpense('Test', false);
+        ExpenseTestDataUtils.createExpenseItem(parent.Id, 'Item 1', 100, true);
 
         parent = [SELECT Id, Total_Amount__c, All_Approved__c FROM Expense__c WHERE Id = :parent.Id];
         System.assertEquals(100, parent.Total_Amount__c);
@@ -40,16 +32,8 @@ public class ExpenseItemTriggerHandlerTest {
      */
     @IsTest
     static void testInsertUnapprovedItemSetsFlagFalse() {
-        Expense__c parent = new Expense__c(Name = 'Test');
-        insert parent;
-
-        Expense_Item__c item1 = new Expense_Item__c(
-                Name = 'Item 1',
-                Expense__c = parent.Id,
-                Amount__c = 100,
-                Approved__c = false
-        );
-        insert item1;
+        Expense__c parent = ExpenseTestDataUtils.createExpense('Test', false);
+        ExpenseTestDataUtils.createExpenseItem(parent.Id, 'Item 1', 100, false);
 
         parent = [SELECT Id, Total_Amount__c, All_Approved__c FROM Expense__c WHERE Id = :parent.Id];
         System.assertEquals(0, parent.Total_Amount__c);
@@ -63,16 +47,8 @@ public class ExpenseItemTriggerHandlerTest {
      */
     @IsTest
     static void testUpdateApprovedFlagTriggersRecalculation() {
-        Expense__c parent = new Expense__c(Name = 'Test');
-        insert parent;
-
-        Expense_Item__c item = new Expense_Item__c(
-                Name = 'Item',
-                Expense__c = parent.Id,
-                Amount__c = 50,
-                Approved__c = false
-        );
-        insert item;
+        Expense__c parent = ExpenseTestDataUtils.createExpense('Test', false);
+        Expense_Item__c item = ExpenseTestDataUtils.createExpenseItem(parent.Id, 'Item', 50, false);
 
         item.Approved__c = true;
         update item;
@@ -89,16 +65,8 @@ public class ExpenseItemTriggerHandlerTest {
      */
     @IsTest
     static void testDeleteApprovedItemRecalculatesTotal() {
-        Expense__c parent = new Expense__c(Name = 'Test');
-        insert parent;
-
-        Expense_Item__c item = new Expense_Item__c(
-                Name = 'Item',
-                Expense__c = parent.Id,
-                Amount__c = 70,
-                Approved__c = true
-        );
-        insert item;
+        Expense__c parent = ExpenseTestDataUtils.createExpense('Test', false);
+        Expense_Item__c item = ExpenseTestDataUtils.createExpenseItem(parent.Id, 'Item', 70, true);
 
         delete item;
 

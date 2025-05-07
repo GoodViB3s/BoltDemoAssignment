@@ -17,24 +17,12 @@ public class ExpenseTriggerHandlerTest {
      */
     @IsTest
     static void testAllApprovedTriggersItemUpdatesAndRecalculation() {
-        Expense__c parent = new Expense__c(Name = 'Test', All_Approved__c = false);
-        insert parent;
+        Expense__c parent = ExpenseTestDataUtils.createExpense('Test', false);
 
-        Expense_Item__c item1 = new Expense_Item__c(
-                Name = 'Item 1',
-                Expense__c = parent.Id,
-                Amount__c = 30,
-                Approved__c = false
-        );
-        Expense_Item__c item2 = new Expense_Item__c(
-                Name = 'Item 2',
-                Expense__c = parent.Id,
-                Amount__c = 20,
-                Approved__c = false
-        );
-        insert new List<Expense_Item__c>{
-                item1, item2
-        };
+        ExpenseTestDataUtils.createExpenseItems(parent.Id, new List<Map<String, Object>>{
+                new Map<String, Object>{ 'name' => 'Item 1', 'amount' => 30, 'approved' => false },
+                new Map<String, Object>{ 'name' => 'Item 2', 'amount' => 20, 'approved' => false }
+        });
 
         parent.All_Approved__c = true;
         update parent;

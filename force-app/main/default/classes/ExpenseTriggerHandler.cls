@@ -7,6 +7,8 @@
  */
 public virtual class ExpenseTriggerHandler {
 
+    private static Set<Id> alreadyHandledExpenseIds = new Set<Id>();
+
     /**
     * Handles post-update logic for Expense records. Central method called from trigger.
     * Method handleAfterUpdate is made for after+update event.
@@ -29,12 +31,16 @@ public virtual class ExpenseTriggerHandler {
         List<Expense__c> expensesToUpdate = new List<Expense__c>();
         List<Expense_Item__c> expenseItemsToUpdate = new List<Expense_Item__c>();
         Set<Id> expenseIdsToRecalculate = new Set<Id>();
+        Map<Id, Boolean> newApprovalMap = new Map<Id, Boolean>();
 
         for (Expense__c newExpense : newRecords) {
             Expense__c oldExp = oldExpensesByIds.get(newExpense.Id);
+
             if (TriggerUtils.isFieldUpdated(oldExp, newExpense, 'All_Approved__c') &&
-                    newExpense.All_Approved__c == true) {
+                    !alreadyHandledExpenseIds.contains(newExpense.Id)) {
                 expenseIdsToRecalculate.add(newExpense.Id);
+                newApprovalMap.put(newExpense.Id, newExpense.All_Approved__c);
+                alreadyHandledExpenseIds.add(newExpense.Id);
             }
         }
 
@@ -42,23 +48,37 @@ public virtual class ExpenseTriggerHandler {
 
         Map<Id, List<Expense_Item__c>> expenseToItems = getExpenseToItemsMap(expenseIdsToRecalculate);
 
-        for (Id expenseId : expenseToItems.keySet()) {
-            List<Expense_Item__c> items = expenseToItems.get(expenseId);
+        for (Id expenseId : expenseIdsToRecalculate) {
+            Boolean isApprovedNow = newApprovalMap.get(expenseId);
+            List<Expense_Item__c> items = expenseToItems.containsKey(expenseId)
+                    ? expenseToItems.get(expenseId)
+                    : new List<Expense_Item__c>();
+
+            Decimal total = 0;
 
             for (Expense_Item__c item : items) {
-
-                if (item.Approved__c == false) {
+                if (isApprovedNow && !item.Approved__c) {
                     item.Approved__c = true;
                     expenseItemsToUpdate.add(item);
+                } else if (!isApprovedNow && item.Approved__c) {
+                    item.Approved__c = false;
+                    expenseItemsToUpdate.add(item);
+                }
+
+                if (isApprovedNow && item.Approved__c) {
+                    total += item.Amount__c;
                 }
             }
 
             expensesToUpdate.add(new Expense__c(
-                    Id = expenseId
+                    Id = expenseId,
+                    Total_Amount__c = isApprovedNow ? total : 0
             ));
         }
 
         update expenseItemsToUpdate;
+
+        update expensesToUpdate;
     }
 
     /**

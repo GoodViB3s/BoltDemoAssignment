@@ -134,7 +134,7 @@ cd BoltDemoAssignment
 The requirement said:
 > “If item is approved → add; if not → subtract”
 
-That approach is fragile:
+That approach is unreliable:
 - It doesn’t handle `delete` or `undelete` well
 - It leads to duplicated logic and missed edge cases
 
@@ -142,11 +142,11 @@ Chosen **full recalculation** for clarity and data integrity.
 
 ### Why does parent (`Expense__c`) sometimes update its own total?
 
-This was intentional. When `All_Approved__c` is toggled, we **don’t wait** for items to trigger recalculation — we do it inside the `ExpenseTriggerHandler`. It ensures the total is updated **immediately and explicitly**.
+This was intentional. When `All_Approved__c` is triggered, we don’t wait for items to trigger recalculation — we do it inside the `ExpenseTriggerHandler`. It ensures the total is updated immediately and explicitly.
 
-### What about recursion?
+### Avoiding recursion
 
-We use a static `Set<Id>` (`alreadyHandledExpenseIds`) to guard trigger re-entry. It is safe and non-invasive.
+A static `Set<Id>` (`alreadyHandledExpenseIds`) is used to guard trigger re-entry. It is safe and non-invasive.
 
 ---
 
